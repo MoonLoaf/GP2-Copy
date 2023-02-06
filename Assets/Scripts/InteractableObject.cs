@@ -20,9 +20,12 @@ public class InteractableObject : MonoBehaviour
     [SerializeField] private List<Player> _playersInside = new();
 
     private bool _interact;
+
     private void OnTriggerEnter(Collider other) {
+
         var cameraState = GameManager.Instance.CurrentGameState;
         var player = other.GetComponentInParent<Player>();
+
         switch (_interactedBy) {
             case PlayerType.Ghost:
                 if (other.CompareTag("Ghost")) {
@@ -53,126 +56,82 @@ public class InteractableObject : MonoBehaviour
     }
 
     private void OnTriggerExit(Collider other) {
+
         var cameraState = GameManager.Instance.CurrentGameState;
         var player = other.GetComponentInParent<Player>();
+
         switch (_interactedBy) {
             case PlayerType.Ghost:
                 if (other.CompareTag("Ghost")) {
-                    player.UpdateCameraTransform(_cameraTransform);
-                    // if (cameraState == GameState.TransitionToPuzzle) {
-                    // }
-
+                    player.UpdateCameraTransform();
                     _interact = false;
                 }
-
                 break;
             case PlayerType.Human:
                 if (other.CompareTag("Player")) {
                     player.UpdateCameraTransform();
-                    // if (cameraState == GameState.TransitionToPuzzle) {
-                    //     //StartCoroutine(TransitionToPuzzle(_camera pos, ResetCameraTransformte));
-                    // }
-
                     _interact = false;
                 }
-
                 break;
             case PlayerType.Both:
                 if (other.CompareTag("Player") || other.CompareTag("Ghost")) {
                     player.UpdateCameraTransform();
-                    // if (cameraState == GameState.TransitionToPuzzle) {
-                    //     //StartCoroutine(TransitionToPuzzle(_camera pos, cameraState));
-                    // }
                     _interact = false;
                 }
-
                 break;
         }
     }
 
     private void OnTriggerStay(Collider other) {
+
         var cameraState = GameManager.Instance.CurrentGameState;
         var player = other.GetComponentInParent<Player>();
+
         switch (_interactedBy) {
             case PlayerType.Ghost:
-                if (other.CompareTag("Ghost")) {
-                    player.UpdateCameraTransform(_cameraTransform);
-                    if(player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.NormalState){
-                        ToInteraction();
-                    }
-                    else if (player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.PuzzleState) {
-                        FromInteraction();
-                    }
+                if (player.InteractionComponent.Interact)
+                {
+                    SwitchCameraMode("Ghost", cameraState, other.gameObject);
                 }
-
                 break;
             case PlayerType.Human:
-                if (other.CompareTag("Player")) {
-                    player.UpdateCameraTransform();
-                    if(player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.NormalState){
-                        ToInteraction();
-                    }
-                    else if (player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.PuzzleState) {
-                        FromInteraction();
-                    }
+                if (player.InteractionComponent.Interact)
+                {
+                    SwitchCameraMode("Player", cameraState, other.gameObject);
                 }
-
                 break;
             case PlayerType.Both:
-                if (other.CompareTag("Player") || other.CompareTag("Ghost")) {
-                    player.UpdateCameraTransform();
-                    if(player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.NormalState) {
-                        GameManager.Instance.CurrentGameState = GameState.TransitionToPuzzle;
-                    }
-                    else if (player.InteractionComponent.Interact && GameManager.Instance.CurrentGameState == GameState.PuzzleState) {
-                        GameManager.Instance.CurrentGameState = GameState.TransitionToNormal;
-                    }
+                if (player.InteractionComponent.Interact)
+                {
+                    SwitchCameraMode("Ghost", "Player", cameraState, other.gameObject);
                 }
                 break;
         }
     }
+    private void SwitchCameraMode(string tag, GameState currentState, GameObject other) {
 
-    private void Update() {
-        if (!_interact) {
-            return;
-        }
+        if (other.CompareTag(tag)) {
 
-        // if (Input.GetKeyDown(KeyCode.F)) {
-        //     // Input manager add buttons
-        //     if (_cameraMode == CameraMode.Puzzle && GameManager.Instance.CurrentGameState == GameState.NormalState) {
-        //         GameManager.Instance.CurrentGameState = GameState.TransitionToPuzzle;
-        //     }
-        //
-        //     if (_quest.CurrentQuestState == QuestState.Completed) {
-        //         if (events == null || events.Count < 1) return; // ska ske engång när du klarat av questet. 
-        //         foreach (var gameEvent in events) {
-        //             gameEvent?.Invoke();
-        //         }
-        //     }
-        // }
-        // if (Input.GetKeyDown(KeyCode.Escape)) {
-        //     if (GameManager.Instance.CurrentGameState == GameState.PuzzleState) {
-        //         GameManager.Instance.CurrentGameState = GameState.TransitionToNormal;
-        //     }
-        // }
-    }
+            currentState = (currentState == GameState.NormalState)
+            ? GameState.TransitionToPuzzle
+            : (currentState == GameState.PuzzleState
+            ? GameState.TransitionToNormal
+            : currentState);
 
-    private void ToInteraction() {
-        if (_cameraMode == CameraMode.Puzzle && GameManager.Instance.CurrentGameState == GameState.NormalState) {
-            GameManager.Instance.CurrentGameState = GameState.TransitionToPuzzle;
-        }
-
-        if (_quest.CurrentQuestState == QuestState.Completed) {
-            if (events == null || events.Count < 1) return; // ska ske engång när du klarat av questet. 
-            foreach (var gameEvent in events) {
-                gameEvent?.Invoke();
-            }
+            GameManager.Instance.CurrentGameState = currentState;
         }
     }
+    private void SwitchCameraMode(string tag1, string tag2, GameState currentState, GameObject other) {
 
-    private void FromInteraction() {
-        if (GameManager.Instance.CurrentGameState == GameState.PuzzleState) {
-            GameManager.Instance.CurrentGameState = GameState.TransitionToNormal;
+        if (other.CompareTag(tag1) || other.CompareTag(tag2)) {
+
+            currentState = (currentState == GameState.NormalState)
+            ? GameState.TransitionToPuzzle
+            : (currentState == GameState.PuzzleState
+            ? GameState.TransitionToNormal
+            : currentState);
+
+            GameManager.Instance.CurrentGameState = currentState;
         }
     }
 }
